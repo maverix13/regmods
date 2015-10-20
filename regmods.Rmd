@@ -1,0 +1,54 @@
+---
+title: "Regression Models"
+author: "Maverix13"
+date: "October 19, 2015"
+output: pdf_document
+---
+
+## Introduction
+
+The report presents an analysis in the relationship automobile transmission and miles per gallon (MPG) as output. The dataset(mtcars) used in the study was extracted from the 1974 Motor Trend US magazine. This report also quantifies the MPG difference between automatic and manual transmission.
+
+## Analysis
+
+*Exploratory Analysis*
+
+The dataset mtcars is loaded for current analysis. 
+
+```{r, echo=FALSE}
+library(GGally)
+library(ggplot2)
+data(mtcars)
+head(mtcars)
+```
+
+As Figure 1 in the appendix shows that manual transmission have better MPG compared to automatic transmission, there is more investigation required to see if other variables are also correlated to MPG.
+
+As Figure 2 shows the correlation of variables other than am may have effect on MPG. 
+
+*Model Selection*
+
+Referring to Figure 2, the variables having higher correlation with MPG are cyl, disp, hp, drat, wt, and vs. This list is based on all the correlations with MPG greater than that of am. From the same correlation data, it can also be noticed that cyl has high correlation with disp, hp and vs.  
+
+
+# Appendix
+
+## Exploratory Analysis
+
+### Figure 1
+
+```{r, echo = FALSE}
+g = ggplot(data = mtcars, aes(y = mpg, x = factor(am), fill = factor(am)))
+g = g + geom_violin(colour = "black", line = "dotted")
+g = g + geom_boxplot(width = 0.1)
+g = g + xlab("Transmission (0 = automatic, 1 = manual)") + ylab("Miles/(US) gallon")
+g = g + geom_jitter(height = 0.5, aes(colour = am))
+g
+```
+
+### Figure 2
+
+```{r, echo = FALSE}
+pairs = ggpairs(mtcars,  axisLabels = "none", lower = list(continuous ="smooth" ), upper=list(params=list(size=3)), params = c(method = "loess"))
+pairs
+```
