@@ -20,15 +20,17 @@ library(GGally)
 library(ggplot2)
 data(mtcars)
 head(mtcars)
+fit <- lm(mpg ~ factor(am), data = mtcars)
+summary(fit)$coef
 ```
 
-As Figure 1 in the appendix shows that manual transmission have better MPG compared to automatic transmission, there is more investigation required to see if other variables are also correlated to MPG.
+Table above shows an intercept estimate 17.12 interpreted as mean MPG for manual transmission and slope of 7.24 interpreted as difference between the means of manual and automatic transmission with a *p-value* of 2.85e-04 which is significant. Hence, we can reject the **null hypothesis** and further investigate the effect of other variables. Figure 1 shows a graphical depiction of above analysis.
 
-As Figure 2 shows the correlation of variables other than am may have effect on MPG. 
+Further, pair analysis of Figure 2 shows the correlation of variables other than am may have effect on MPG. 
 
 *Model Selection*
 
-Referring to Figure 2, the variables having higher correlation with MPG are cyl, disp, hp, drat, wt, and vs. This list is based on all the correlations with MPG greater than that of am. From the same correlation data, it can also be noticed that cyl has high correlation with disp, hp and vs.  
+Referring to Figure 2, the variables having higher correlation with MPG are cyl, disp, hp and  wt. From the same correlation data, it can also be noticed that cyl has very high correlation with disp -- signifying a redundancy in variables. Based on the argument presented, further analysis will be done using cyl, hp, wt and am variables.  
 
 
 # Appendix
