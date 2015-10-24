@@ -11,13 +11,15 @@ The report presents an analysis in the relationship automobile transmission and 
 
 ## Analysis
 
-*Exploratory Analysis*
+###Exploratory Analysis
 
 The dataset mtcars is loaded for current analysis. 
 
 ```{r, echo=FALSE}
 library(GGally)
 library(ggplot2)
+library(car)
+library(MASS)
 data(mtcars)
 head(mtcars)
 fit <- lm(mpg ~ factor(am), data = mtcars)
@@ -28,10 +30,69 @@ Table above shows an intercept estimate 17.12 interpreted as mean MPG for manual
 
 Further, pair analysis of Figure 2 shows the correlation of variables other than am may have effect on MPG. 
 
-*Model Selection*
+###Model Selection
 
-Referring to Figure 2, the variables having higher correlation with MPG are cyl, disp, hp and  wt. From the same correlation data, it can also be noticed that cyl has very high correlation with disp -- signifying a redundancy in variables. Based on the argument presented, further analysis will be done using cyl, hp, wt and am variables.  
+Model selection requires a combination of predictors to best determine overall fuel efficiency. Including all the predictors will result in high standard error. Following steps will evaluate models to make up best formula for prediction.
 
+***Collinearity***
+
+To diagnose collinearity in multiple variables in our model, variance inflation factor(VIF) is used as a diagnostic tool. Since this model contains factor variables, VIF values for factor variables will be very high depending on the number of factor values measured as Degrees of freedom. Hence to provide for comparison, we use GVIF^(1/(2*Df)) (the square root of the VIF/GVIF value as DF=1) which is the proportional change of the standard error and confidence interval of their coefficients due to the level of collinearity.
+```{r}
+model <- lm(mpg ~ factor(cyl) + disp + hp + drat + wt + qsec + factor(vs) + factor(am) + factor(gear) + factor(carb), data = mtcars)
+vif(model)[,3]
+```
+
+We notice that disp has unusually high value. Also, referring to Figure 2, we can see that cyl and disp has a correlation of 0.902 signifying that disp is a redundat variable can be dropped from the model.
+
+***Stepwise Selection***
+
+[Reference: http://www.biostat.jhsph.edu/~iruczins/teaching/jf/ch10.pdf, Section: 10.2/10.3]
+
+We start with a model including all the variables. Stepwise model selection uses the Akaike information criterion that implements both forward selection and backward elimination. This ensures that we have included useful variables while omitting ones that do not contribute significantly to predicting mpg.
+
+```{r, results='hide'}
+model <- lm(mpg ~ factor(cyl) + disp + hp + drat + wt + qsec + factor(vs) + factor(am) + factor(gear) + factor(carb), data = mtcars)
+bestModel <- stepAIC(model, direction = "both")
+
+```
+
+```{r}
+summary(bestModel)
+```
+
+The best model is based on cyl, hp, wt and am as predictors with R-squared of 86.6%, meaning 86.6% of the variability is captured by this model.
+
+***Model Comparison***
+
+In this section, we compare the models using Nested Likelihood Ratio Test. The models we are using are simple model (mpg ~ factor(am)), stepwise selected model (mpg ~ factor(cyl) + hp + wt + factor(am)), collinearity model (mpg ~ factor(cyl) + hp + drat + wt + qsec + factor(vs) + factor(am) + factor(gear) + factor(carb)) and model containing all the variables (mpg ~ factor(cyl) + disp + hp + drat + wt + qsec + factor(vs) + factor(am) + factor(gear) + factor(carb)).
+
+```{r}
+fit1 <- lm(mpg ~ factor(am), data = mtcars)
+fit2 <- lm(mpg ~ factor(cyl) + hp + wt + factor(am), data = mtcars)
+fit3 <- lm(mpg ~ factor(cyl) + hp + drat + wt + qsec + factor(vs) + factor(am) + factor(gear) + factor(carb), data = mtcars)
+fit4 <- lm(mpg ~ factor(cyl) + disp + hp + drat + wt + qsec + factor(vs) + factor(am) + factor(gear) + factor(carb), data = mtcars)
+anova(fit1, fit2, fit3, fit4)
+```
+
+Interpreting the results above, we see that second model has a p-value which is significant and we can reject the null hypothesis that additional varaibles do not contribute to MPG. While model 3 and 4 have insignificat p value so null hypothesis holds.
+
+Further analysis will be done on model 2 (mpg ~ factor(cyl) + hp + wt + factor(am)). 
+
+```{r}
+summary(fit2)
+```
+
+The model above shows a R-squared of 0.8659 explaining 86.59% of variation. Also, model has a very low p value and we can confidently reject the null hypothesis.
+
+###Residual and Diagnostics
+
+```{r}
+residFitPlot <- ggplot(data.frame(x = fit2$fitted.values, y = resid(fit2)), aes(x = x, y = y)) +
+  geom_point() + geom_hline(yintercept=0)+geom_smooth(method = "loess") +
+  xlab("Fitted Values") + ylab("Residuals")  
+   
+residFitPlot 
+```
 
 # Appendix
 
