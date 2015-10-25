@@ -5,29 +5,38 @@ date: "October 19, 2015"
 output: pdf_document
 ---
 
-## Introduction
+## Executive Summary
 
 The report presents an analysis in the relationship automobile transmission and miles per gallon (MPG) as output. The dataset(mtcars) used in the study was extracted from the 1974 Motor Trend US magazine. This report also quantifies the MPG difference between automatic and manual transmission.
+
+To provide the relationship between MPG and transmission, this report present exploratory analysis, model selection and diagnostics. Model selection uses testing hypothesis and regression models to make inference. Multiple models -- ranging from a simple univariate to mulitvariate -- are used and a selection of required variables is presented. Multivariate regression provided better results. 
+
+Finally, a model based on number of cylinders, horse power, weight and transmission is selected. These variables provide the most impact in quantifying the MPG difference between automatic and manual transmission. The report concludes :
+
+
+* Cars with manual transmission is better than autmoatic transmission. The MPG difference is 1.8.
+* MPG decreases with the weight of the car, about 2.5 for every 1000 lb increase.
+* MPG decreases on number of cylinders. From 4 to 6 decrease is 3.0 while it is 2.2 for 8.
+* Also, MPG decreases 0.032 per unit increase in horse power.
 
 ## Analysis
 
 ###Exploratory Analysis
 
-The dataset mtcars is loaded for current analysis. 
+The dataset mtcars is loaded for current analysis. A simple linear model of MPG against transmission is presented below.
 
-```{r, echo=FALSE}
+```{r, message=FALSE, echo=FALSE}
 library(GGally)
 library(ggplot2)
 library(car)
 library(MASS)
 require(gridExtra)
 data(mtcars)
-head(mtcars)
 fit <- lm(mpg ~ factor(am), data = mtcars)
 summary(fit)$coef
 ```
 
-Table above shows an intercept estimate 17.12 interpreted as mean MPG for manual transmission and slope of 7.24 interpreted as difference between the means of manual and automatic transmission with a *p-value* of 2.85e-04 which is significant. Hence, we can reject the **null hypothesis** and further investigate the effect of other variables. Figure 1 shows a graphical depiction of above analysis.
+Table above shows an intercept estimate `r round(fit$coefficients[1],2)` interpreted as mean MPG for manual transmission and slope of `r round(fit$coefficients[2],2)` interpreted as difference between the means of manual and automatic transmission with a *p-value* of `r format(anova(fit)$'Pr(>F)'[1], scientific = TRUE)` which is significant. Hence, we can reject the **null hypothesis** and further investigate the effect of other variables. Figure 1 shows a graphical depiction of above analysis.
 
 Further, pair analysis of Figure 2 shows the correlation of variables other than am may have effect on MPG. 
 
@@ -38,8 +47,9 @@ Model selection requires a combination of predictors to best determine overall f
 ***Collinearity***
 
 To diagnose collinearity in multiple variables in our model, variance inflation factor(VIF) is used as a diagnostic tool. Since this model contains factor variables, VIF values for factor variables will be very high depending on the number of factor values measured as Degrees of freedom. Hence to provide for comparison, we use GVIF^(1/(2*Df)) (the square root of the VIF/GVIF value as DF=1) which is the proportional change of the standard error and confidence interval of their coefficients due to the level of collinearity.
-```{r}
-model <- lm(mpg ~ factor(cyl) + disp + hp + drat + wt + qsec + factor(vs) + factor(am) + factor(gear) + factor(carb), data = mtcars)
+```{r echo = FALSE}
+model <- lm(mpg ~ factor(cyl) + disp + hp + drat + wt + qsec + factor(vs) + factor(am) + 
+              factor(gear) + factor(carb), data = mtcars)
 vif(model)[,3]
 ```
 
@@ -51,47 +61,54 @@ We notice that disp has unusually high value. Also, referring to Figure 2, we ca
 
 We start with a model including all the variables. Stepwise model selection uses the Akaike information criterion that implements both forward selection and backward elimination. This ensures that we have included useful variables while omitting ones that do not contribute significantly to predicting mpg.
 
-```{r, results='hide'}
-model <- lm(mpg ~ factor(cyl) + disp + hp + drat + wt + qsec + factor(vs) + factor(am) + factor(gear) + factor(carb), data = mtcars)
+```{r, echo = FALSE, results='hide'}
+model <- lm(mpg ~ factor(cyl) + disp + hp + drat + wt + qsec + factor(vs) + factor(am) + 
+              factor(gear) + factor(carb), data = mtcars)
 bestModel <- stepAIC(model, direction = "both")
-
 ```
 
-```{r}
-summary(bestModel)
-```
-
-The best model is based on cyl, hp, wt and am as predictors with R-squared of 86.6%, meaning 86.6% of the variability is captured by this model.
+As shown in Table 1 (Appendix) the stepwise model is based on cyl, hp, wt and am as predictors with R-squared of 86.6%, meaning 86.6% of the variability is captured by this model.
 
 ***Model Comparison***
 
-In this section, we compare the models using Nested Likelihood Ratio Test. The models we are using are simple model (mpg ~ factor(am)), stepwise selected model (mpg ~ factor(cyl) + hp + wt + factor(am)), collinearity model (mpg ~ factor(cyl) + hp + drat + wt + qsec + factor(vs) + factor(am) + factor(gear) + factor(carb)) and model containing all the variables (mpg ~ factor(cyl) + disp + hp + drat + wt + qsec + factor(vs) + factor(am) + factor(gear) + factor(carb)).
+In this section, we compare the models using Nested Likelihood Ratio Test. The models we are using are simple model , stepwise selected model, collinearity model and model containing all the variables.
 
 ```{r}
 fit1 <- lm(mpg ~ factor(am), data = mtcars)
 fit2 <- lm(mpg ~ factor(cyl) + hp + wt + factor(am), data = mtcars)
-fit3 <- lm(mpg ~ factor(cyl) + hp + drat + wt + qsec + factor(vs) + factor(am) + factor(gear) + factor(carb), data = mtcars)
-fit4 <- lm(mpg ~ factor(cyl) + disp + hp + drat + wt + qsec + factor(vs) + factor(am) + factor(gear) + factor(carb), data = mtcars)
-anova(fit1, fit2, fit3, fit4)
+fit3 <- lm(mpg ~ factor(cyl) + hp + drat + wt + qsec + factor(vs) + factor(am) + 
+             factor(gear) + factor(carb), data = mtcars)
+fit4 <- lm(mpg ~ factor(cyl) + disp + hp + drat + wt + qsec + factor(vs) + factor(am) + 
+             factor(gear) + factor(carb), data = mtcars)
 ```
 
-Interpreting the results above, we see that second model has a p-value which is significant and we can reject the null hypothesis that additional varaibles do not contribute to MPG. While model 3 and 4 have insignificat p value so null hypothesis holds.
+Interpreting the results from Table 2, we see that second model has a p-value which is significant and we can reject the null hypothesis that additional varaibles do not contribute to MPG. While model 3 and 4 have insignificat p value so null hypothesis holds.
 
 Further analysis will be done on model 2 (mpg ~ factor(cyl) + hp + wt + factor(am)). 
 
-```{r}
-summary(fit2)
-```
-
-The model above shows a R-squared of 0.8659 explaining 86.59% of variation. Also, model has a very low p value and we can confidently reject the null hypothesis.
+Referring to Table 1 (Appendix) the model above shows a R-squared of 0.8659 explaining 86.59% of variation. Also, model has a very low p value and we can confidently reject the null hypothesis.
 
 ###Residual and Diagnostics
 
 ***Residuals vs Fitted Values***
 
-The graphs below show residuals plotted against fitted values. First graphs show that there are no systematic patterns. Standardized residuals provide more comparable scale (making it a t like statistic). Again there is no systematic pattern visible.
+The graphs in Figure 3 show residuals plotted against fitted values. First graph shows that there are no systematic patterns. Standardized residuals provide more comparable scale (making it a t like statistic). Again there is no systematic pattern visible.
 
-```{r}
+***Normality of Residuals***
+
+Normal Q-Q plot testing the normality of errors by plotting theoretical quantiles by standardized residuals. The graph in Figure 4 shows it is normal and there are no visible tails as well as it does not appear skewed.
+
+***Influence Measures***
+
+The graphs in Figure 5 present the influence of various data points. Based on Cook's distance observation 18 (Fiat 128) is influential. Further analysis (not present in this report) also showed that Fiat128 has high residual as well as an outlier on Normal Q-Q plot.
+
+# Appendix
+
+##Residual and Diagnostics
+
+###Figure 3
+
+```{r echo = FALSE, fig.height=3}
 ei <- resid(fit2)
 residFitPlot <- ggplot(data.frame(x = fit2$fitted.values, y = ei), aes(x = x, y = y)) +
   geom_point() + geom_hline(aes(yintercept=0, colour = "red")) + geom_smooth(method = "loess") +
@@ -107,17 +124,19 @@ scaleLocPlot <- ggplot(data.frame(x = fit2$fitted.values, y= sqrt.rs), aes(x = x
 grid.arrange(residFitPlot, scaleLocPlot, ncol = 2) 
 ```
 
-***Normality of Residuals***
+###Figure 4
 
-Normal Q-Q plot testing the normality of errors by plotting theoretical quantiles by standardized residuals.
-
-```{r}
+```{r echo = FALSE, fig.height=3}
 qq <- qqPlot(fit2, ylab = "Standardized residuals", xlab = "Theoretical Quantiles", main = "Normal Q-Q")
 ```
 
-***Influence Measures***
+###Figure 5
 
-```{r}
+```{r echo = FALSE, fig.height=3}
+distPlot<-ggplot(fit2, aes(seq_along(.cooksd), .cooksd))+geom_bar(stat="identity", position="identity") +
+    xlab("Obs. Number")+ylab("Cook's distance") +
+    ggtitle("Cook's distance")+theme_bw()
+    
 residLevPlot<-ggplot(fit2, aes(.hat, .stdresid))+geom_point(aes(size=.cooksd)) +
     stat_smooth(method="loess", na.rm=TRUE) +
     xlab("Leverage")+ylab("Standardized Residuals") +
@@ -131,16 +150,28 @@ cksdPlot <-ggplot(fit2, aes(.hat, .cooksd))+geom_point(na.rm=TRUE)+stat_smooth(m
     geom_abline(slope=seq(0,3,0.5), color="gray", linetype="dashed") +
     theme_bw()
     
-grid.arrange(residLevPlot, cksdPlot, ncol = 2)
+grid.arrange(distPlot, residLevPlot, cksdPlot, ncol = 3)
 ```
 
-# Appendix
+## Model Selection
+
+### Table 1
+
+```{r, echo = FALSE}
+summary(bestModel)
+```
+
+### Table 2
+
+```{r, echo = FALSE}
+anova(fit1, fit2, fit3, fit4)
+```
 
 ## Exploratory Analysis
 
 ### Figure 1
 
-```{r, echo = FALSE}
+```{r, echo = FALSE, fig.height=4}
 g = ggplot(data = mtcars, aes(y = mpg, x = factor(am), fill = factor(am)))
 g = g + geom_violin(colour = "black", line = "dotted")
 g = g + geom_boxplot(width = 0.1)
@@ -155,3 +186,4 @@ g
 pairs = ggpairs(mtcars,  axisLabels = "none", lower = list(continuous ="smooth" ), upper=list(params=list(size=3)), params = c(method = "loess"))
 pairs
 ```
+
