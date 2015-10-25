@@ -1,11 +1,6 @@
----
-title: "Regression Models"
-author: "Maverix13"
-date: "October 19, 2015"
-output: 
-  html_document: 
-    keep_md: yes
----
+# Regression Models
+Maverix13  
+October 19, 2015  
 
 ## Executive Summary
 
@@ -27,18 +22,14 @@ Finally, a model based on number of cylinders, horse power, weight and transmiss
 
 The dataset mtcars is loaded for current analysis. A simple linear model of MPG against transmission is presented below.
 
-```{r, message=FALSE, echo=FALSE}
-library(GGally)
-library(ggplot2)
-library(car)
-library(MASS)
-require(gridExtra)
-data(mtcars)
-fit <- lm(mpg ~ factor(am), data = mtcars)
-summary(fit)$coef
+
+```
+##              Estimate Std. Error   t value     Pr(>|t|)
+## (Intercept) 17.147368   1.124603 15.247492 1.133983e-15
+## factor(am)1  7.244939   1.764422  4.106127 2.850207e-04
 ```
 
-Table above shows an intercept estimate `r round(fit$coefficients[1],2)` interpreted as mean MPG for manual transmission and slope of `r round(fit$coefficients[2],2)` interpreted as difference between the means of manual and automatic transmission with a *p-value* of `r format(anova(fit)$'Pr(>F)'[1], scientific = TRUE)` which is significant. Hence, we can reject the **null hypothesis** and further investigate the effect of other variables. Figure 1 shows a graphical depiction of above analysis.
+Table above shows an intercept estimate 17.15 interpreted as mean MPG for manual transmission and slope of 7.24 interpreted as difference between the means of manual and automatic transmission with a *p-value* of 2.850207e-04 which is significant. Hence, we can reject the **null hypothesis** and further investigate the effect of other variables. Figure 1 shows a graphical depiction of above analysis.
 
 Further, pair analysis of Figure 2 shows the correlation of variables other than am may have effect on MPG. 
 
@@ -49,10 +40,12 @@ Model selection requires a combination of predictors to best determine overall f
 ***Collinearity***
 
 To diagnose collinearity in multiple variables in our model, variance inflation factor(VIF) is used as a diagnostic tool. Since this model contains factor variables, VIF values for factor variables will be very high depending on the number of factor values measured as Degrees of freedom. Hence to provide for comparison, we use GVIF^(1/(2*Df)) (the square root of the VIF/GVIF value as DF=1) which is the proportional change of the standard error and confidence interval of their coefficients due to the level of collinearity.
-```{r echo = FALSE}
-model <- lm(mpg ~ factor(cyl) + disp + hp + drat + wt + qsec + factor(vs) + factor(am) + 
-              factor(gear) + factor(carb), data = mtcars)
-vif(model)[,3]
+
+```
+##  factor(cyl)         disp           hp         drat           wt 
+##     3.364380     7.769536     5.312210     2.609533     4.881683 
+##         qsec   factor(vs)   factor(am) factor(gear) factor(carb) 
+##     3.284842     2.843970     3.151269     2.670408     1.862838
 ```
 
 We notice that disp has unusually high value. Also, referring to Figure 2, we can see that cyl and disp has a correlation of 0.902 signifying that disp is a redundat variable can be dropped from the model.
@@ -63,11 +56,7 @@ We notice that disp has unusually high value. Also, referring to Figure 2, we ca
 
 We start with a model including all the variables. Stepwise model selection uses the Akaike information criterion that implements both forward selection and backward elimination. This ensures that we have included useful variables while omitting ones that do not contribute significantly to predicting mpg.
 
-```{r, echo = FALSE, results='hide'}
-model <- lm(mpg ~ factor(cyl) + disp + hp + drat + wt + qsec + factor(vs) + factor(am) + 
-              factor(gear) + factor(carb), data = mtcars)
-bestModel <- stepAIC(model, direction = "both")
-```
+
 
 As shown in Table 1 (Appendix) the stepwise model is based on cyl, hp, wt and am as predictors with R-squared of 86.6%, meaning 86.6% of the variability is captured by this model.
 
@@ -75,7 +64,8 @@ As shown in Table 1 (Appendix) the stepwise model is based on cyl, hp, wt and am
 
 In this section, we compare the models using Nested Likelihood Ratio Test. The models we are using are simple model , stepwise selected model, collinearity model and model containing all the variables.
 
-```{r}
+
+```r
 fit1 <- lm(mpg ~ factor(am), data = mtcars)
 fit2 <- lm(mpg ~ factor(cyl) + hp + wt + factor(am), data = mtcars)
 fit3 <- lm(mpg ~ factor(cyl) + hp + drat + wt + qsec + factor(vs) + factor(am) + 
@@ -110,82 +100,74 @@ The graphs in Figure 5 present the influence of various data points. Based on Co
 
 ###Figure 3
 
-```{r echo = FALSE, fig.height=3}
-ei <- resid(fit2)
-residFitPlot <- ggplot(data.frame(x = fit2$fitted.values, y = ei), aes(x = x, y = y)) +
-  geom_point() + geom_hline(aes(yintercept=0, colour = "red")) + geom_smooth(method = "loess") +
-  xlab("Fitted Values") + ylab("Residuals") + ggtitle("Residuals vs Fitted") 
-
-s <- sqrt(deviance(fit2)/df.residual(fit2))
-rs <- ei/s
-sqrt.rs <- sqrt(abs(rs))
-scaleLocPlot <- ggplot(data.frame(x = fit2$fitted.values, y= sqrt.rs), aes(x = x, y = y)) +
-  geom_point() + geom_smooth(method = "loess") +
-  xlab("Fitted Values") + ylab(expression(sqrt("Standardized residuals"))) + ggtitle("Scale-Location")
-
-grid.arrange(residFitPlot, scaleLocPlot, ncol = 2) 
-```
+![](regmods_files/figure-html/unnamed-chunk-5-1.png) 
 
 ###Figure 4
 
-```{r echo = FALSE, fig.height=3}
-qq <- qqPlot(fit2, ylab = "Standardized residuals", xlab = "Theoretical Quantiles", main = "Normal Q-Q")
-```
+![](regmods_files/figure-html/unnamed-chunk-6-1.png) 
 
 ###Figure 5
 
-```{r echo = FALSE, fig.height=3}
-distPlot<-ggplot(fit2, aes(seq_along(.cooksd), .cooksd))+geom_bar(stat="identity", position="identity") +
-    xlab("Obs. Number")+ylab("Cook's distance") +
-    ggtitle("Cook's distance")+theme_bw()
-    
-residLevPlot<-ggplot(fit2, aes(.hat, .stdresid))+geom_point(aes(size=.cooksd)) +
-    stat_smooth(method="loess", na.rm=TRUE) +
-    xlab("Leverage")+ylab("Standardized Residuals") +
-    ggtitle("Residual vs Leverage Plot") +
-    scale_size_continuous("Cook's Distance", range=c(1,5)) +
-    theme_bw()+theme(legend.position="bottom") 
-
-cksdPlot <-ggplot(fit2, aes(.hat, .cooksd))+geom_point(na.rm=TRUE)+stat_smooth(method="loess") +
-    xlab("Leverage hii")+ylab("Cook's Distance") +
-    ggtitle("Cook's dist vs Leverage hii/(1-hii)") +
-    geom_abline(slope=seq(0,3,0.5), color="gray", linetype="dashed") +
-    theme_bw()
-    
-grid.arrange(distPlot, residLevPlot, cksdPlot, ncol = 3)
-```
+![](regmods_files/figure-html/unnamed-chunk-7-1.png) 
 
 ## Model Selection
 
 ### Table 1
 
-```{r, echo = FALSE}
-summary(bestModel)
+
+```
+## 
+## Call:
+## lm(formula = mpg ~ factor(cyl) + hp + wt + factor(am), data = mtcars)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -3.9387 -1.2560 -0.4013  1.1253  5.0513 
+## 
+## Coefficients:
+##              Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)  33.70832    2.60489  12.940 7.73e-13 ***
+## factor(cyl)6 -3.03134    1.40728  -2.154  0.04068 *  
+## factor(cyl)8 -2.16368    2.28425  -0.947  0.35225    
+## hp           -0.03211    0.01369  -2.345  0.02693 *  
+## wt           -2.49683    0.88559  -2.819  0.00908 ** 
+## factor(am)1   1.80921    1.39630   1.296  0.20646    
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 2.41 on 26 degrees of freedom
+## Multiple R-squared:  0.8659,	Adjusted R-squared:  0.8401 
+## F-statistic: 33.57 on 5 and 26 DF,  p-value: 1.506e-10
 ```
 
 ### Table 2
 
-```{r, echo = FALSE}
-anova(fit1, fit2, fit3, fit4)
+
+```
+## Analysis of Variance Table
+## 
+## Model 1: mpg ~ factor(am)
+## Model 2: mpg ~ factor(cyl) + hp + wt + factor(am)
+## Model 3: mpg ~ factor(cyl) + hp + drat + wt + qsec + factor(vs) + factor(am) + 
+##     factor(gear) + factor(carb)
+## Model 4: mpg ~ factor(cyl) + disp + hp + drat + wt + qsec + factor(vs) + 
+##     factor(am) + factor(gear) + factor(carb)
+##   Res.Df    RSS Df Sum of Sq       F    Pr(>F)    
+## 1     30 720.90                                   
+## 2     26 151.03  4    569.87 17.7489 1.476e-05 ***
+## 3     16 130.37 10     20.66  0.2573    0.9822    
+## 4     15 120.40  1      9.97  1.2417    0.2827    
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
 
 ## Exploratory Analysis
 
 ### Figure 1
 
-```{r, echo = FALSE, fig.height=4}
-g = ggplot(data = mtcars, aes(y = mpg, x = factor(am), fill = factor(am)))
-g = g + geom_violin(colour = "black", line = "dotted")
-g = g + geom_boxplot(width = 0.1)
-g = g + xlab("Transmission (0 = automatic, 1 = manual)") + ylab("Miles/(US) gallon")
-g = g + geom_jitter(height = 0.5, aes(colour = am))
-g
-```
+![](regmods_files/figure-html/unnamed-chunk-10-1.png) 
 
 ### Figure 2
 
-```{r, echo = FALSE}
-pairs = ggpairs(mtcars,  axisLabels = "none", lower = list(continuous ="smooth" ), upper=list(params=list(size=3)), params = c(method = "loess"))
-pairs
-```
+![](regmods_files/figure-html/unnamed-chunk-11-1.png) 
 
