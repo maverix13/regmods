@@ -20,6 +20,7 @@ library(GGally)
 library(ggplot2)
 library(car)
 library(MASS)
+require(gridExtra)
 data(mtcars)
 head(mtcars)
 fit <- lm(mpg ~ factor(am), data = mtcars)
@@ -86,12 +87,51 @@ The model above shows a R-squared of 0.8659 explaining 86.59% of variation. Also
 
 ###Residual and Diagnostics
 
+***Residuals vs Fitted Values***
+
+The graphs below show residuals plotted against fitted values. First graphs show that there are no systematic patterns. Standardized residuals provide more comparable scale (making it a t like statistic). Again there is no systematic pattern visible.
+
 ```{r}
-residFitPlot <- ggplot(data.frame(x = fit2$fitted.values, y = resid(fit2)), aes(x = x, y = y)) +
-  geom_point() + geom_hline(yintercept=0)+geom_smooth(method = "loess") +
-  xlab("Fitted Values") + ylab("Residuals")  
-   
-residFitPlot 
+ei <- resid(fit2)
+residFitPlot <- ggplot(data.frame(x = fit2$fitted.values, y = ei), aes(x = x, y = y)) +
+  geom_point() + geom_hline(aes(yintercept=0, colour = "red")) + geom_smooth(method = "loess") +
+  xlab("Fitted Values") + ylab("Residuals") + ggtitle("Residuals vs Fitted") 
+
+s <- sqrt(deviance(fit2)/df.residual(fit2))
+rs <- ei/s
+sqrt.rs <- sqrt(abs(rs))
+scaleLocPlot <- ggplot(data.frame(x = fit2$fitted.values, y= sqrt.rs), aes(x = x, y = y)) +
+  geom_point() + geom_smooth(method = "loess") +
+  xlab("Fitted Values") + ylab(expression(sqrt("Standardized residuals"))) + ggtitle("Scale-Location")
+
+grid.arrange(residFitPlot, scaleLocPlot, ncol = 2) 
+```
+
+***Normality of Residuals***
+
+Normal Q-Q plot testing the normality of errors by plotting theoretical quantiles by standardized residuals.
+
+```{r}
+qq <- qqPlot(fit2, ylab = "Standardized residuals", xlab = "Theoretical Quantiles", main = "Normal Q-Q")
+```
+
+***Influence Measures***
+
+```{r}
+residLevPlot<-ggplot(fit2, aes(.hat, .stdresid))+geom_point(aes(size=.cooksd)) +
+    stat_smooth(method="loess", na.rm=TRUE) +
+    xlab("Leverage")+ylab("Standardized Residuals") +
+    ggtitle("Residual vs Leverage Plot") +
+    scale_size_continuous("Cook's Distance", range=c(1,5)) +
+    theme_bw()+theme(legend.position="bottom") 
+
+cksdPlot <-ggplot(fit2, aes(.hat, .cooksd))+geom_point(na.rm=TRUE)+stat_smooth(method="loess") +
+    xlab("Leverage hii")+ylab("Cook's Distance") +
+    ggtitle("Cook's dist vs Leverage hii/(1-hii)") +
+    geom_abline(slope=seq(0,3,0.5), color="gray", linetype="dashed") +
+    theme_bw()
+    
+grid.arrange(residLevPlot, cksdPlot, ncol = 2)
 ```
 
 # Appendix
